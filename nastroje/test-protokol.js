@@ -107,6 +107,23 @@ eq('energy LE 24000', hex(job[3].slice(6, 8)), 'c0 5d');
   await pr;
   eq('resumed: sent', String(sent.length > 0), 'true');
 
+  // chyba v hlášení průběhu nesmí zastavit tisk
+  sent.length = 0;
+  const c2 = fakeCanvas(384, 100, []);
+  await P.printCanvas(c2, { feedLines: 5, onProgress: () => { throw new Error('ui gone'); } });
+  const exp2 = P._internal.concat(buildJob(P._internal.canvasToLines(c2), { feedLines: 5 }));
+  eq('progress error: whole job still sent', String(P._internal.concat(sent).length), String(exp2.length));
+
+  // výběr zařízení, které není tiskárna → zapomenout ho
+  const badDevice = { name: 'Sluchátka', addEventListener() {}, removeEventListener() {},
+    gatt: { connected: false, async connect() { this.connected = true; return { async getPrimaryService() { const e = new Error('no svc'); e.name = 'NotFoundError'; throw e; } }; }, disconnect() { this.connected = false; } } };
+  ctx.navigator.bluetooth.requestDevice = async () => badDevice;
+  let err = null;
+  try { await P.connect(true); } catch (e) { err = e.message; }
+  eq('wrong device: error notprinter', String(err), 'notprinter');
+  eq('wrong device: forgotten', String(P.hasDevice()), 'false');
+  eq('wrong device: gatt disconnected', String(badDevice.gatt.connected), 'false');
+
   console.log(fails ? `\n${fails} chyb` : '\nVše v pořádku ✅');
   process.exit(fails ? 1 : 0);
 })();

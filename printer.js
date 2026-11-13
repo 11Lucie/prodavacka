@@ -112,7 +112,15 @@ const Printer = (() => {
     device = d;
     device.removeEventListener('gattserverdisconnected', onDisconnect);
     device.addEventListener('gattserverdisconnected', onDisconnect);
-    await setup();
+    try {
+      await setup();
+    } catch (e) {
+      // špatné zařízení nebo nepovedené spojení: zapomenout ho, ať se příště znovu nabídne seznam
+      try { d.removeEventListener('gattserverdisconnected', onDisconnect); if (d.gatt.connected) d.gatt.disconnect(); } catch (x) { /* nic */ }
+      device = null; tx = null; rx = null; emit();
+      if (e && e.name === 'NotFoundError') throw new Error('notprinter');
+      throw e;
+    }
     return status();
   }
 
@@ -159,9 +167,9 @@ const Printer = (() => {
       if (!status().connected) throw new Error('lost');
       await write(writes[i]);
       await sleep(limit <= 20 ? 12 : 22);
-      if (onProgress && i % 10 === 0) onProgress(i / writes.length);
+      if (onProgress && i % 10 === 0) try { onProgress(i / writes.length); } catch (e) { /* chyba v zobrazení nesmí zastavit tisk */ }
     }
-    if (onProgress) onProgress(1);
+    if (onProgress) try { onProgress(1); } catch (e) { /* nic */ }
   }
 
   function concat(arrs) {

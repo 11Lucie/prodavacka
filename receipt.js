@@ -63,6 +63,11 @@ const Receipt = (() => {
         ctx.textBaseline = 'top';
         ctx.fillStyle = '#000';
         const rw = ctx.measureText(right).width;
+        if (rw > (W - PAD * 2) * 0.55) { // pravá část je moc dlouhá → dva řádky pod sebou
+          this.text(left, { size, bold });
+          this.text(right, { size, bold, align: 'right' });
+          return;
+        }
         const lines = wrap(left, W - PAD * 2 - rw - 12);
         lines.forEach((line, i) => {
           ctx.fillText(line, PAD, y);
@@ -152,7 +157,7 @@ const Receipt = (() => {
    */
   function render(data) {
     const big = document.createElement('canvas');
-    big.width = W; big.height = 4000;
+    big.width = W; big.height = 1600 + (data.items || []).length * 130; // dost místa i pro dlouhý nákup
     const ctx = big.getContext('2d');
     ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, big.height);
     const pen = makePen(ctx);

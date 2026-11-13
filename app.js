@@ -128,17 +128,26 @@
     fresh.classList.toggle('anim', $('#modal').classList.contains('hidden'));
     fresh.innerHTML = html;
     old.replaceWith(fresh);
+    // krok v historii, aby gesto „zpět“ zavřelo okno, a ne celou hru
+    if ($('#modal').classList.contains('hidden') && !(history.state && history.state.modal)) {
+      try { history.pushState({ modal: 1 }, ''); } catch (e) { /* nic */ }
+    }
     $('#modal').classList.remove('hidden');
     onModalClose = onClose || null;
     fresh.scrollTop = keepScroll;
   }
-  function closeModal() {
+  function closeModal(fromBack) {
+    if ($('#modal').classList.contains('hidden')) return;
     $('#modal').classList.add('hidden');
     const old = $('#sheet');
     old.replaceWith(old.cloneNode(false));
     const f = onModalClose; onModalClose = null;
     if (f) f();
+    if (!fromBack && history.state && history.state.modal) {
+      try { history.replaceState(null, ''); } catch (e) { /* nic */ }
+    }
   }
+  window.addEventListener('popstate', () => closeModal(true));
   $('#modal').addEventListener('click', (e) => {
     if (e.target.id === 'modal') closeModal();
     if (e.target.closest('[data-close]')) closeModal();
@@ -494,9 +503,12 @@
     $('#tap').addEventListener('click', () => {
       $('#tap').disabled = true; $('#back').disabled = true;
       Sound.fx('card');
-      $('#cardMsg').textContent = 'Komunikuji s bankou…';
-      setTimeout(() => { Sound.fx('approved'); $('#cardMsg').textContent = '✅ Platba schválena'; }, 1300);
-      setTimeout(() => finish(t), 2100);
+      const msg = $('#cardMsg');
+      msg.textContent = 'Komunikuji s bankou…';
+      // když se okno zavře během „placení“, nákup se nedokončí
+      const t1 = setTimeout(() => { Sound.fx('approved'); msg.textContent = '✅ Platba schválena'; }, 1300);
+      const t2 = setTimeout(() => { onModalClose = null; finish(t); }, 2100);
+      onModalClose = () => { clearTimeout(t1); clearTimeout(t2); };
     });
   }
 
@@ -568,7 +580,8 @@
     $('#print').addEventListener('click', async () => {
       const btn = $('#print');
       btn.disabled = true;
-      const ok = await printWithUi(canvas, (m) => { $('#printMsg').textContent = m; });
+      const msg = $('#printMsg'); // když okno mezitím zavře, píše se do odpojeného prvku – tisk běží dál
+      const ok = await printWithUi(canvas, (m) => { msg.textContent = m; });
       btn.disabled = false;
       if (ok) btn.textContent = '🖨️ Vytisknout znovu';
     });
@@ -589,7 +602,7 @@
       say('✅ Vytištěno!');
       return true;
     } catch (e) {
-      Sound.fx('error');
+      if (!/busy/.test(String(e && e.message))) Sound.fx('error');
       say(printError(e));
       return false;
     } finally { renderTop(); }
@@ -597,6 +610,8 @@
 
   function printError(e) {
     const m = String((e && (e.name + ' ' + e.message)) || e);
+    if (/busy/.test(m)) return 'Ještě tisknu, chvilku počkej 🙂';
+    if (/notprinter/.test(m)) return 'Tohle zařízení není tiskárna. Zkus to znovu a vyber „MX05“ (nebo podobně).';
     if (/NotFoundError|cancel/i.test(m)) return 'Tiskárna nebyla vybrána. Zkus to znovu a vyber „MX05“ (nebo podobně).';
     if (/nobt/.test(m)) return 'Tento prohlížeč neumí Bluetooth. Použij Chrome.';
     if (/NetworkError|lost|GATT|disconnect/i.test(m)) return 'Spojení s tiskárnou se přerušilo. Je zapnutá a blízko? Zkus to znovu.';
@@ -629,7 +644,8 @@
       4. Tiskárnu nepáruj v nastavení Androidu – stačí ji vybrat tady.<br>
       Nevidíš ji v seznamu? <button class="minibtn" id="all">Ukázat všechna zařízení</button></p>
       ${st.connected ? '<div class="row"><button class="btn ghost" id="disc">Odpojit</button></div>' : ''}`);
-    const say = (m) => { $('#printMsg').textContent = m; };
+    const msgEl = $('#printMsg');
+    const say = (m) => { msgEl.textContent = m; };
     $('#sheet').addEventListener('click', (e) => {
       const b = e.target.closest('[data-p]');
       if (b) { S.printer[b.dataset.p] = b.dataset.v; save(); Sound.fx('click'); openPrinter(); }
@@ -647,7 +663,10 @@
         items: [{ name: 'Zkušební jablko', emoji: '🍎', qty: 2, price: 5 }], total: 10, payment: 'card',
         customer: null, pointsAdded: 1, pointsUsed: 0, reward: null,
       };
+      const tb = $('#test');
+      tb.disabled = true;
       await printWithUi(Receipt.render(data), say);
+      tb.disabled = false;
     });
     const disc = $('#disc');
     if (disc) disc.addEventListener('click', () => { Printer.disconnect(); openPrinter(); renderTop(); });
@@ -727,7 +746,8 @@
       <div class="row" style="margin-top:12px"><button class="btn" id="add">＋ Nová odměna</button><button class="btn ok" data-close>✔ Hotovo</button></div>`);
     const ask = (r) => {
       const n = prompt('Název odměny:', r ? r.name : ''); if (!n || !n.trim()) return null;
-      const c = prompt('Kolik bodů stojí?', r ? r.cost : 10); const cost = Math.max(1, Math.round(parseNum(c)));
+      const c = prompt('Kolik bodů stojí?', r ? r.cost : 10); if (c === null) return null;
+      const cost = Math.max(1, Math.round(parseNum(c)));
       return { name: n.trim().slice(0, 30), cost };
     };
     $('#sheet').addEventListener('click', (e) => {
