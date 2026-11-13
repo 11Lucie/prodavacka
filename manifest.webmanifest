@@ -1,0 +1,17 @@
+{
+  "name": "Prodavačka – hra na obchod",
+  "short_name": "Prodavačka",
+  "description": "Hra na obchod s pokladnou, věrnostními body a tiskem účtenek na malou Bluetooth tiskárnu.",
+  "lang": "cs",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#fff7ef",
+  "theme_color": "#ff7a59",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

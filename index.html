@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Prodavačka</title>
+<meta name="theme-color" content="#ff7a59">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <button class="shopname" id="shopNameBtn" title="Název obchodu">
+      <span class="logo">🛒</span><span id="shopNameText">Obchůdek</span>
+    </button>
+    <button class="cashier" id="cashierBtn" title="Kdo dnes obsluhuje">
+      <span class="small">Dnes obsluhuje</span>
+      <span id="cashierText" class="big">—</span>
+    </button>
+    <div class="topbtns">
+      <button id="printerBtn" class="iconbtn" title="Tiskárna"><span id="printerDot" class="dot off"></span>🖨️</button>
+      <button id="editBtn" class="iconbtn" title="Upravit dlaždice">✏️</button>
+      <button id="settingsBtn" class="iconbtn" title="Nastavení">⚙️</button>
+    </div>
+  </header>
+
+  <nav id="cats" class="cats"></nav>
+
+  <main class="main">
+    <section class="tilesWrap">
+      <div id="editHint" class="edithint hidden">✏️ Režim úprav: klepni na dlaždici a uprav ji. Hotovo? Klepni znovu na ✏️ nahoře.</div>
+      <div id="tiles" class="tiles"></div>
+    </section>
+
+    <aside id="cart" class="cart">
+      <div class="cartHead" id="cartHead">
+        <span>🧺 Nákup</span>
+        <span id="cartCount" class="badge">0</span>
+        <span class="grow"></span>
+        <span id="cartTotalMini" class="totalMini">0 Kč</span>
+      </div>
+      <div id="cartItems" class="cartItems"></div>
+      <div class="cartFoot">
+        <div class="totalRow"><span>Celkem</span><span id="cartTotal">0 Kč</span></div>
+        <div class="cartBtns">
+          <button id="clearBtn" class="btn ghost">🗑️ Vysypat</button>
+          <button id="payBtn" class="btn primary big">💰 Zaplatit</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<!-- Univerzální okno (dialog) -->
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="sound.js"></script>
+<script src="printer.js"></script>
+<script src="receipt.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
